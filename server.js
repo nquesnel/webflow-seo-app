@@ -14,12 +14,14 @@ app.use(express.urlencoded({ extended: true }));
 app.use(session({
   secret: process.env.SESSION_SECRET || crypto.randomBytes(64).toString('hex'),
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true, // Changed to true to ensure session is saved
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
+    sameSite: 'lax', // Added for CSRF protection
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
+  },
+  name: 'webflow-seo-session' // Custom session name
 }));
 
 // OAuth Configuration
@@ -129,19 +131,33 @@ app.get('/auth', (req, res) => {
   // Generate state for CSRF protection
   const state = crypto.randomBytes(32).toString('hex');
   req.session.oauthState = state;
+  
+  // Force session save before redirect
+  req.session.save((err) => {
+    if (err) {
+      console.error('Session save error:', err);
+      return res.status(500).send('Session error');
+    }
 
-  // Build authorization URL
-  const params = new URLSearchParams({
-    client_id: process.env.WEBFLOW_CLIENT_ID,
-    response_type: 'code',
-    scope: SCOPES,
-    redirect_uri: process.env.WEBFLOW_REDIRECT_URI,
-    state: state
+    console.log('OAuth flow started:', {
+      sessionId: req.sessionID,
+      state: state,
+      redirectUri: process.env.WEBFLOW_REDIRECT_URI
+    });
+
+    // Build authorization URL
+    const params = new URLSearchParams({
+      client_id: process.env.WEBFLOW_CLIENT_ID,
+      response_type: 'code',
+      scope: SCOPES,
+      redirect_uri: process.env.WEBFLOW_REDIRECT_URI,
+      state: state
+    });
+
+    const authUrl = `${WEBFLOW_AUTH_URL}?${params.toString()}`;
+    console.log('Redirecting to:', authUrl);
+    res.redirect(authUrl);
   });
-
-  const authUrl = `${WEBFLOW_AUTH_URL}?${params.toString()}`;
-  console.log('Redirecting to:', authUrl);
-  res.redirect(authUrl);
 });
 
 // OAuth callback
@@ -168,8 +184,18 @@ app.get('/callback', async (req, res) => {
 
   // Verify state
   if (!state || state !== req.session.oauthState) {
-    console.error('State mismatch');
-    return res.status(400).send('Invalid state parameter');
+    console.error('State mismatch:', {
+      received: state,
+      expected: req.session.oauthState,
+      sessionId: req.sessionID,
+      hasSession: !!req.session
+    });
+    return res.status(400).send(`
+      <h1>Invalid State Parameter</h1>
+      <p style="color: red;">The OAuth state parameter doesn't match. This is usually due to session issues.</p>
+      <p>Please try again:</p>
+      <a href="/auth">Restart Authentication</a>
+    `);
   }
 
   // Clear state
