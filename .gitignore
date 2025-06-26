@@ -32,6 +32,7 @@ build/
 
 # Session data
 sessions/
+sessions.json
 
 # Temporary files
 *.tmp

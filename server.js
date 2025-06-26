@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
+const FileStore = require('session-file-store')(session);
 const axios = require('axios');
 const crypto = require('crypto');
 const path = require('path');
@@ -11,18 +12,33 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(session({
+
+// Session configuration with file store
+const sessionConfig = {
+  store: new FileStore({
+    path: './sessions',
+    ttl: 86400, // 24 hours
+    retries: 5,
+    secret: process.env.SESSION_SECRET
+  }),
   secret: process.env.SESSION_SECRET || crypto.randomBytes(64).toString('hex'),
   resave: false,
-  saveUninitialized: true, // Changed to true to ensure session is saved
+  saveUninitialized: true,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    sameSite: 'lax', // Added for CSRF protection
+    sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   },
-  name: 'webflow-seo-session' // Custom session name
-}));
+  name: 'webflow-seo-session'
+};
+
+// In production, trust proxy for secure cookies
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
+app.use(session(sessionConfig));
 
 // OAuth Configuration
 const WEBFLOW_AUTH_URL = 'https://webflow.com/oauth/authorize';
