@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webflow SEO Manager</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header h1 { color: #333; margin-bottom: 10px; }
+        .status { display: inline-block; padding: 5px 10px; border-radius: 4px; font-size: 14px; }
+        .status.connected { background: #d4edda; color: #155724; }
+        .status.disconnected { background: #f8d7da; color: #721c24; }
+        .button { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; border: none; cursor: pointer; font-size: 16px; }
+        .button:hover { background: #0056b3; }
+        .button.secondary { background: #6c757d; }
+        .button.secondary:hover { background: #545b62; }
+        .sites-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
+        .site-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .site-card h3 { margin-bottom: 10px; color: #333; }
+        .site-card p { color: #666; margin-bottom: 15px; }
+        .loader { display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .error { background: #f8d7da; color: #721c24; padding: 15px; border-radius: 4px; margin: 20px 0; }
+        .success { background: #d4edda; color: #155724; padding: 15px; border-radius: 4px; margin: 20px 0; }
+        #seo-dashboard { display: none; }
+        .seo-table { width: 100%; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .seo-table th, .seo-table td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        .seo-table th { background: #f8f9fa; font-weight: 600; }
+        .seo-table tr:last-child td { border-bottom: none; }
+        .score { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .score.high { background: #d4edda; color: #155724; }
+        .score.medium { background: #fff3cd; color: #856404; }
+        .score.low { background: #f8d7da; color: #721c24; }
+        .issues { font-size: 12px; color: #666; }
+        .issues li { margin-left: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Webflow SEO Manager</h1>
+            <div id="auth-status">
+                <span class="status disconnected">Not Connected</span>
+                <a href="/auth" class="button">Connect to Webflow</a>
+            </div>
+        </div>
+
+        <div id="sites-list" style="display: none;">
+            <h2>Your Sites</h2>
+            <div class="sites-grid" id="sites-grid"></div>
+        </div>
+
+        <div id="seo-dashboard">
+            <button class="button secondary" onclick="backToSites()">← Back to Sites</button>
+            <h2 style="margin: 20px 0;">SEO Analysis: <span id="site-name"></span></h2>
+            <div id="seo-summary"></div>
+            <table class="seo-table">
+                <thead>
+                    <tr>
+                        <th>Page</th>
+                        <th>Score</th>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Issues</th>
+                    </tr>
+                </thead>
+                <tbody id="seo-results"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let currentSiteId = null;
+
+        // Check authentication status on load
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/sites');
+                if (response.ok) {
+                    document.getElementById('auth-status').innerHTML = `
+                        <span class="status connected">Connected</span>
+                        <a href="/disconnect" class="button secondary">Disconnect</a>
+                    `;
+                    loadSites();
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+            }
+        }
+
+        // Load sites
+        async function loadSites() {
+            document.getElementById('sites-list').style.display = 'block';
+            document.getElementById('sites-grid').innerHTML = '<div class="loader"></div>';
+            
+            try {
+                const response = await fetch('/api/sites');
+                const data = await response.json();
+                
+                if (data.sites && data.sites.length > 0) {
+                    document.getElementById('sites-grid').innerHTML = data.sites.map(site => `
+                        <div class="site-card">
+                            <h3>${site.displayName || site.name}</h3>
+                            <p>${site.previewUrl || ''}</p>
+                            <button class="button" onclick="analyzeSite('${site.id}', '${site.displayName || site.name}')">Analyze SEO</button>
+                        </div>
+                    `).join('');
+                } else {
+                    document.getElementById('sites-grid').innerHTML = '<p>No sites found</p>';
+                }
+            } catch (error) {
+                document.getElementById('sites-grid').innerHTML = `<div class="error">Failed to load sites: ${error.message}</div>`;
+            }
+        }
+
+        // Analyze site SEO
+        async function analyzeSite(siteId, siteName) {
+            currentSiteId = siteId;
+            document.getElementById('sites-list').style.display = 'none';
+            document.getElementById('seo-dashboard').style.display = 'block';
+            document.getElementById('site-name').textContent = siteName;
+            document.getElementById('seo-results').innerHTML = '<tr><td colspan="5"><div class="loader"></div> Analyzing...</td></tr>';
+            
+            try {
+                const response = await fetch(`/api/sites/${siteId}/analyze-seo`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                // Display summary
+                document.getElementById('seo-summary').innerHTML = `
+                    <div class="success">
+                        <strong>SEO Summary:</strong> 
+                        ${data.summary.totalPages} pages analyzed | 
+                        Average Score: ${data.summary.averageScore}/100 | 
+                        Total Issues: ${data.summary.totalIssues}
+                    </div>
+                `;
+                
+                // Display results
+                document.getElementById('seo-results').innerHTML = data.pages.map(page => {
+                    const scoreClass = page.score >= 80 ? 'high' : page.score >= 60 ? 'medium' : 'low';
+                    return `
+                        <tr>
+                            <td><strong>${page.title}</strong><br><small>/${page.slug}</small></td>
+                            <td><span class="score ${scoreClass}">${page.score}/100</span></td>
+                            <td>${page.seo.title || '<em>Not set</em>'}</td>
+                            <td>${page.seo.description ? page.seo.description.substring(0, 50) + '...' : '<em>Not set</em>'}</td>
+                            <td>
+                                ${page.issues.length > 0 ? 
+                                    `<ul class="issues">${page.issues.map(issue => `<li>${issue}</li>`).join('')}</ul>` : 
+                                    '<span style="color: green;">✓ No issues</span>'
+                                }
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                document.getElementById('seo-results').innerHTML = `
+                    <tr><td colspan="5"><div class="error">Failed to analyze SEO: ${error.message}</div></td></tr>
+                `;
+            }
+        }
+
+        // Back to sites
+        function backToSites() {
+            document.getElementById('seo-dashboard').style.display = 'none';
+            document.getElementById('sites-list').style.display = 'block';
+        }
+
+        // Initialize
+        checkAuth();
+    </script>
+</body>
+</html>
