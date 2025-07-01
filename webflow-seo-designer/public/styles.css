@@ -432,26 +432,25 @@ textarea {
 .content-metrics.stacked {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 8px;
+  gap: 16px;
+  margin-top: 12px;
 }
 
 .content-metrics.stacked .metric-item {
-  background: #f8f9fa;
-  padding: 10px 12px;
-  border-radius: 6px;
-  border: 1px solid #e9ecef;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
+  text-align: center;
+  gap: 4px;
 }
 
 .content-metrics.stacked .metric-label {
-  font-size: 12px;
+  font-size: 11px;
   color: #6c757d;
   font-weight: 600;
-  text-transform: none;
-  letter-spacing: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
 }
 
 .content-metrics.stacked .metric-value-wrap {
@@ -461,27 +460,28 @@ textarea {
 }
 
 .content-metrics.stacked .metric-value {
-  font-size: 16px;
+  font-size: 32px;
   font-weight: 600;
   color: #495057;
+  line-height: 1;
 }
 
 .content-metrics.stacked .metric-value.loading {
-  font-size: 12px;
+  font-size: 14px;
   color: #6c757d;
   font-weight: normal;
 }
 
 .content-metrics.stacked .metric-target {
-  font-size: 12px;
+  font-size: 16px;
   color: #6c757d;
   font-weight: normal;
 }
 
 .content-metrics.stacked .metric-desc {
-  font-size: 11px;
+  font-size: 12px;
   color: #6c757d;
-  margin-left: 4px;
+  margin-left: 6px;
 }
 
 /* Content Analysis - Compact (old grid layout) */
@@ -635,8 +635,18 @@ textarea {
 }
 
 .heading-tree.scrollable {
-  max-height: 120px;
+  height: calc(100% - 50px); /* Full height minus the h3 title */
+  max-height: 200px;
   overflow-y: auto;
+}
+
+.heading-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.heading-section h3 {
+  flex-shrink: 0;
 }
 
 .heading-item {
