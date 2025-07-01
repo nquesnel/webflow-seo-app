@@ -443,11 +443,7 @@ function analyzeKeywordPlacement(page, keyword) {
                     issues.push({ type: 'warning', message: 'Focus keyword not found in opening content (first 10%)' });
                 }
             }
-            // 5. Check keyword in image alt text
-            const imageKeywordAnalysis = yield checkKeywordInImages(rootElement, lowerKeyword);
-            if (imageKeywordAnalysis) {
-                issues.push(imageKeywordAnalysis);
-            }
+            // Note: Keyword in image alt text is now handled by checkImagesForAltText function
         }
         catch (error) {
             console.error('Error analyzing keyword placement:', error);
@@ -455,58 +451,7 @@ function analyzeKeywordPlacement(page, keyword) {
         return issues;
     });
 }
-// Check if keyword exists in any image alt text
-function checkKeywordInImages(element, keyword) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let totalImages = 0;
-        let imagesWithKeyword = 0;
-        function checkElement(el) {
-            return __awaiter(this, void 0, void 0, function* () {
-                try {
-                    // Check if this is an image element
-                    if (el.getTag && typeof el.getTag === 'function') {
-                        const tag = yield el.getTag();
-                        if (tag === 'img') {
-                            totalImages++;
-                            const alt = yield el.getAttribute('alt');
-                            if (alt && alt.toLowerCase().includes(keyword)) {
-                                imagesWithKeyword++;
-                            }
-                        }
-                    }
-                    // Check children
-                    if (el.getChildren && typeof el.getChildren === 'function') {
-                        const children = yield el.getChildren();
-                        if (children && Array.isArray(children)) {
-                            for (const child of children) {
-                                yield checkElement(child);
-                            }
-                        }
-                    }
-                }
-                catch (error) {
-                    // Silent fail for elements that don't support these methods
-                }
-            });
-        }
-        yield checkElement(element);
-        if (totalImages === 0) {
-            return null; // No images to check
-        }
-        if (imagesWithKeyword > 0) {
-            return {
-                type: 'success',
-                message: `Focus keyword found in ${imagesWithKeyword} image alt text${imagesWithKeyword > 1 ? 's' : ''}`
-            };
-        }
-        else {
-            return {
-                type: 'info',
-                message: 'Focus keyword not found in any image alt text'
-            };
-        }
-    });
-}
+// Note: This function is now replaced by the more comprehensive analyzeAllImages function
 // Analyze link structure (internal vs external)
 function analyzeLinkStructure(element) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -671,38 +616,157 @@ function countHeadingsByLevel(element, level) {
 function checkImagesForAltText(element) {
     return __awaiter(this, void 0, void 0, function* () {
         const issues = [];
-        let totalImages = 0;
+        const images = yield analyzeAllImages(element);
+        if (images.length === 0) {
+            issues.push({ type: 'info', message: 'No images found - consider adding visuals to enhance content' });
+            return issues;
+        }
+        // Get focus keyword if available
+        const keywordInput = document.getElementById('focus-keyword');
+        const keyword = (keywordInput === null || keywordInput === void 0 ? void 0 : keywordInput.value.toLowerCase().trim()) || '';
+        // Analyze images
         let imagesWithoutAlt = 0;
+        let genericAltTexts = 0;
+        let poorFilenames = 0;
+        let tooShortAlt = 0;
+        let tooLongAlt = 0;
+        let keywordInAltCount = 0;
+        images.forEach(img => {
+            if (!img.hasAlt) {
+                imagesWithoutAlt++;
+            }
+            else {
+                if (img.isGenericAlt)
+                    genericAltTexts++;
+                if (img.altLength < 5)
+                    tooShortAlt++;
+                if (img.altLength > 125)
+                    tooLongAlt++;
+                if (keyword && img.alt.toLowerCase().includes(keyword))
+                    keywordInAltCount++;
+            }
+            if (!img.isDescriptiveFilename)
+                poorFilenames++;
+        });
+        // Report issues in order of importance
+        // Critical: Missing alt text
+        if (imagesWithoutAlt > 0) {
+            issues.push({
+                type: 'error',
+                message: `${imagesWithoutAlt} of ${images.length} images missing alt text`
+            });
+        }
+        else {
+            issues.push({ type: 'success', message: `All ${images.length} images have alt text` });
+        }
+        // Alt text quality issues
+        if (genericAltTexts > 0) {
+            issues.push({
+                type: 'warning',
+                message: `${genericAltTexts} image${genericAltTexts > 1 ? 's use' : ' uses'} generic alt text (avoid "image", "photo", etc.)`
+            });
+        }
+        if (tooShortAlt > 0) {
+            issues.push({
+                type: 'warning',
+                message: `${tooShortAlt} image${tooShortAlt > 1 ? 's have' : ' has'} alt text that's too short (<5 chars)`
+            });
+        }
+        if (tooLongAlt > 0) {
+            issues.push({
+                type: 'info',
+                message: `${tooLongAlt} image${tooLongAlt > 1 ? 's have' : ' has'} alt text that's too long (>125 chars)`
+            });
+        }
+        // Filename issues
+        if (poorFilenames > 0) {
+            issues.push({
+                type: 'info',
+                message: `${poorFilenames} image${poorFilenames > 1 ? 's have' : ' has'} non-descriptive filenames (e.g., IMG_1234.jpg)`
+            });
+        }
+        // Keyword optimization (only if keyword is set)
+        if (keyword && images.length > 0) {
+            if (keywordInAltCount === 0) {
+                issues.push({
+                    type: 'info',
+                    message: 'Focus keyword not found in any image alt text'
+                });
+            }
+            else if (keywordInAltCount > images.length / 2) {
+                issues.push({
+                    type: 'warning',
+                    message: `Keyword appears in ${keywordInAltCount} of ${images.length} alt texts - avoid over-optimization`
+                });
+            }
+        }
+        // Image count recommendations based on content
+        if (contentCache === null || contentCache === void 0 ? void 0 : contentCache.wordCount) {
+            const recommendedImages = Math.ceil(contentCache.wordCount / 300); // 1 image per 300 words
+            if (images.length < recommendedImages && images.length < 4) {
+                issues.push({
+                    type: 'info',
+                    message: `Consider adding ${recommendedImages - images.length} more image${recommendedImages - images.length > 1 ? 's' : ''} for better engagement`
+                });
+            }
+        }
+        return issues;
+    });
+}
+// Comprehensive image analysis
+function analyzeAllImages(element) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const images = [];
+        const genericAltPatterns = [
+            'image', 'photo', 'picture', 'img', 'pic', 'graphic',
+            'banner', 'icon', 'logo', 'untitled', 'default'
+        ];
         function checkElement(el) {
             return __awaiter(this, void 0, void 0, function* () {
-                const tag = yield el.getTag();
-                if (tag === 'img') {
-                    totalImages++;
-                    const alt = yield el.getAttribute('alt');
-                    if (!alt || alt.trim() === '') {
-                        imagesWithoutAlt++;
+                var _a;
+                try {
+                    if (el.getTag && typeof el.getTag === 'function') {
+                        const tag = yield el.getTag();
+                        if (tag === 'img') {
+                            const src = (yield el.getAttribute('src')) || '';
+                            const alt = (yield el.getAttribute('alt')) || '';
+                            // Extract filename from src
+                            const filename = ((_a = src.split('/').pop()) === null || _a === void 0 ? void 0 : _a.split('?')[0]) || '';
+                            // Check if filename is descriptive
+                            const isDescriptiveFilename = !/^(IMG|DSC|DSCN|image|photo|picture|untitled)[-_]?\d+\.(jpg|jpeg|png|gif|webp)$/i.test(filename)
+                                && filename.length > 8
+                                && !/^\d+\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
+                            // Check if alt text is generic
+                            const isGenericAlt = genericAltPatterns.some(pattern => alt.toLowerCase().trim() === pattern ||
+                                alt.toLowerCase().trim() === `${pattern}.`);
+                            images.push({
+                                src,
+                                alt,
+                                filename,
+                                hasAlt: alt.trim().length > 0,
+                                altLength: alt.trim().length,
+                                isGenericAlt,
+                                isDescriptiveFilename
+                            });
+                        }
+                    }
+                    // Check children
+                    if (el.getChildren && typeof el.getChildren === 'function') {
+                        const children = yield el.getChildren();
+                        if (children && Array.isArray(children)) {
+                            for (const child of children) {
+                                yield checkElement(child);
+                            }
+                        }
                     }
                 }
-                const children = yield el.getChildren();
-                for (const child of children) {
-                    yield checkElement(child);
+                catch (error) {
+                    // Silent fail
                 }
             });
         }
         yield checkElement(element);
-        if (totalImages === 0) {
-            issues.push({ type: 'success', message: 'No images found on page' });
-        }
-        else if (imagesWithoutAlt === 0) {
-            issues.push({ type: 'success', message: `All ${totalImages} images have alt text` });
-        }
-        else {
-            issues.push({
-                type: 'warning',
-                message: `${imagesWithoutAlt} of ${totalImages} images missing alt text`
-            });
-        }
-        return issues;
+        return images;
     });
 }
 function calculateSEOScore(issues, contentAnalysis) {
@@ -1167,22 +1231,91 @@ function displayRecommendations(issues, headings) {
             });
         }
     });
-    // Priority 8: Other improvements
-    issues.filter(i => i.type === 'warning').forEach(issue => {
-        if (issue.message.includes('image') && !issue.message.includes('keyword')) {
+    // Priority 8: Image optimization
+    issues.forEach(issue => {
+        if (issue.message.includes('images missing alt text')) {
             recommendations.push({
-                priority: 8,
-                type: 'warning',
-                title: '🖼️ Fix Image Alt Text',
-                description: issue.message,
+                priority: 3, // High priority - accessibility issue
+                type: 'error',
+                title: '🖼️ Add Missing Alt Text',
+                description: issue.message + ' - critical for accessibility and SEO',
                 action: () => {
                     alert('Select images in Webflow Designer and add descriptive alt text');
                 }
             });
         }
-        else if (issue.message.includes('readability') && !issue.message.includes('sentence') && !issue.message.includes('paragraph')) {
+        else if (issue.message.includes('generic alt text')) {
             recommendations.push({
                 priority: 8,
+                type: 'warning',
+                title: '✏️ Improve Alt Descriptions',
+                description: 'Replace generic terms with descriptive text that explains the image content',
+                action: () => {
+                    alert('Update alt text to describe what the image shows, not just "image" or "photo"');
+                }
+            });
+        }
+        else if (issue.message.includes('alt text that\'s too short')) {
+            recommendations.push({
+                priority: 8,
+                type: 'warning',
+                title: '📝 Expand Short Alt Text',
+                description: 'Alt text should be at least 5 characters to be meaningful',
+                action: () => {
+                    alert('Make alt text more descriptive - explain what the image shows');
+                }
+            });
+        }
+        else if (issue.message.includes('alt text that\'s too long')) {
+            recommendations.push({
+                priority: 8,
+                type: 'info',
+                title: '✂️ Shorten Long Alt Text',
+                description: 'Keep alt text under 125 characters for best results',
+                action: () => {
+                    alert('Trim alt text to be concise but descriptive (under 125 chars)');
+                }
+            });
+        }
+        else if (issue.message.includes('non-descriptive filenames')) {
+            recommendations.push({
+                priority: 8,
+                type: 'info',
+                title: '📁 Use SEO-Friendly Filenames',
+                description: 'Replace generic filenames like IMG_1234.jpg with descriptive names',
+                action: () => {
+                    alert('Rename images with descriptive filenames before uploading (e.g., red-running-shoes.jpg)');
+                }
+            });
+        }
+        else if (issue.message.includes('Consider adding') && issue.message.includes('more image')) {
+            recommendations.push({
+                priority: 8,
+                type: 'info',
+                title: '📸 Add More Images',
+                description: issue.message,
+                action: () => {
+                    alert('Add relevant images to break up text and improve engagement');
+                }
+            });
+        }
+        else if (issue.message.includes('avoid over-optimization')) {
+            recommendations.push({
+                priority: 8,
+                type: 'warning',
+                title: '⚠️ Reduce Keyword in Alt Text',
+                description: 'Using your keyword in every alt text looks spammy',
+                action: () => {
+                    alert('Use your keyword naturally in only 1-2 image alt texts, not all of them');
+                }
+            });
+        }
+    });
+    // Priority 9: Other improvements
+    issues.filter(i => i.type === 'warning' || i.type === 'info').forEach(issue => {
+        if (issue.message.includes('readability') && !issue.message.includes('sentence') && !issue.message.includes('paragraph')) {
+            recommendations.push({
+                priority: 9,
                 type: 'info',
                 title: '📖 Improve Readability',
                 description: issue.message,
