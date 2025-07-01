@@ -1525,6 +1525,11 @@ function displayRecommendations(issues, headings) {
     });
     // Sort by priority
     recommendations.sort((a, b) => a.priority - b.priority);
+    // Update count
+    const countEl = document.getElementById('rec-count');
+    if (countEl) {
+        countEl.textContent = recommendations.length > 0 ? `(${recommendations.length})` : '';
+    }
     // Display recommendations
     if (recommendations.length === 0) {
         recommendationsList.innerHTML = `
@@ -1535,7 +1540,7 @@ function displayRecommendations(issues, headings) {
     `;
         return;
     }
-    recommendationsList.innerHTML = recommendations.slice(0, 12).map(rec => `
+    recommendationsList.innerHTML = recommendations.map(rec => `
     <div class="recommendation-item ${rec.type}" ${rec.action ? `onclick="(${rec.action.toString()})()"` : ''}>
       <div class="rec-header">
         <span class="rec-title">${rec.title}</span>
