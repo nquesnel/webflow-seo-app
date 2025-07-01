@@ -339,6 +339,14 @@ function analyzePageContent(page) {
         catch (error) {
             console.error('Error analyzing links:', error);
         }
+        // Analyze technical SEO elements
+        try {
+            const technicalSEO = yield analyzeTechnicalSEO(page);
+            issues.push(...technicalSEO);
+        }
+        catch (error) {
+            console.error('Error analyzing technical SEO:', error);
+        }
         // Add content quality metrics if available
         if (contentCache === null || contentCache === void 0 ? void 0 : contentCache.contentQuality) {
             const quality = contentCache.contentQuality;
@@ -452,6 +460,103 @@ function analyzeKeywordPlacement(page, keyword) {
     });
 }
 // Note: This function is now replaced by the more comprehensive analyzeAllImages function
+// Analyze technical SEO elements
+function analyzeTechnicalSEO(page) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const issues = [];
+        try {
+            // 1. URL Slug Analysis (enhanced from basic check)
+            const slug = yield page.getSlug();
+            if (slug) {
+                // Check slug length
+                if (slug.length > 60) {
+                    issues.push({
+                        type: 'warning',
+                        message: `URL slug is too long (${slug.length} chars) - keep under 60 for better user experience`
+                    });
+                }
+                // Check for stop words in slug
+                const stopWords = ['a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for'];
+                const slugWords = slug.toLowerCase().split(/[-_]/);
+                const stopWordsInSlug = slugWords.filter(word => stopWords.indexOf(word) !== -1);
+                if (stopWordsInSlug.length > 2) {
+                    issues.push({
+                        type: 'info',
+                        message: `URL contains ${stopWordsInSlug.length} stop words - consider removing for cleaner URLs`
+                    });
+                }
+                // Check for special characters
+                if (!/^[a-z0-9-]+$/.test(slug)) {
+                    issues.push({
+                        type: 'warning',
+                        message: 'URL slug contains special characters or uppercase letters'
+                    });
+                }
+                // Check for duplicate hyphens
+                if (slug.includes('--')) {
+                    issues.push({
+                        type: 'warning',
+                        message: 'URL slug contains duplicate hyphens'
+                    });
+                }
+            }
+            // 2. Check for meta robots
+            // Note: In Webflow, this would typically be set in page settings
+            // We can check if the page is set to be indexed
+            try {
+                const isDraft = yield page.isDraft();
+                if (isDraft) {
+                    issues.push({
+                        type: 'info',
+                        message: 'Page is in draft mode - won\'t be indexed by search engines'
+                    });
+                }
+            }
+            catch (e) {
+                // Silent fail if isDraft is not available
+            }
+            // 3. Check for Open Graph tags (basic check - would need DOM access for full check)
+            const title = yield page.getTitle();
+            const description = yield page.getDescription();
+            // Basic OG tag recommendations based on standard meta tags
+            if (title && description) {
+                issues.push({
+                    type: 'info',
+                    message: 'Consider adding Open Graph tags for better social sharing'
+                });
+            }
+            // 4. Page structure recommendations
+            const rootElement = yield webflow.getRootElement();
+            if (rootElement) {
+                // Check for structured data opportunities
+                const hasArticleContent = (contentCache === null || contentCache === void 0 ? void 0 : contentCache.wordCount) && contentCache.wordCount > 500;
+                const hasFAQContent = (contentCache === null || contentCache === void 0 ? void 0 : contentCache.text) && /\?[\s\S]{1,200}(answer|response|solution)/i.test(contentCache.text);
+                if (hasArticleContent) {
+                    issues.push({
+                        type: 'info',
+                        message: 'Long-form content detected - consider adding Article schema markup'
+                    });
+                }
+                if (hasFAQContent) {
+                    issues.push({
+                        type: 'info',
+                        message: 'Q&A content detected - consider adding FAQ schema markup'
+                    });
+                }
+            }
+            // 5. Language and locale
+            // Note: Webflow typically handles this at site level
+            issues.push({
+                type: 'info',
+                message: 'Ensure language attributes are set in site settings for international SEO'
+            });
+        }
+        catch (error) {
+            console.error('Technical SEO analysis error:', error);
+        }
+        return issues;
+    });
+}
 // Analyze link structure (internal vs external)
 function analyzeLinkStructure(element) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -1311,11 +1416,102 @@ function displayRecommendations(issues, headings) {
             });
         }
     });
-    // Priority 9: Other improvements
+    // Priority 9: Technical SEO
+    issues.forEach(issue => {
+        if (issue.message.includes('URL slug is too long')) {
+            recommendations.push({
+                priority: 9,
+                type: 'warning',
+                title: '🔗 Shorten URL Slug',
+                description: 'Keep URLs under 60 characters for better user experience',
+                action: () => {
+                    alert('Edit page slug in Webflow page settings to be more concise');
+                }
+            });
+        }
+        else if (issue.message.includes('stop words')) {
+            recommendations.push({
+                priority: 9,
+                type: 'info',
+                title: '🧹 Clean Up URL',
+                description: 'Remove unnecessary words like "the", "and", "in" from URL',
+                action: () => {
+                    alert('Edit slug to remove stop words (e.g., "the-best-shoes-in-store" → "best-shoes-store")');
+                }
+            });
+        }
+        else if (issue.message.includes('special characters or uppercase')) {
+            recommendations.push({
+                priority: 9,
+                type: 'warning',
+                title: '⚠️ Fix URL Format',
+                description: 'Use only lowercase letters, numbers, and hyphens in URLs',
+                action: () => {
+                    alert('Update slug to use only lowercase letters and hyphens (no spaces or special characters)');
+                }
+            });
+        }
+        else if (issue.message.includes('duplicate hyphens')) {
+            recommendations.push({
+                priority: 9,
+                type: 'warning',
+                title: '➖ Fix Double Hyphens',
+                description: 'Remove duplicate hyphens from URL for cleaner structure',
+                action: () => {
+                    alert('Edit slug to remove double hyphens (-- should be -)');
+                }
+            });
+        }
+        else if (issue.message.includes('draft mode')) {
+            recommendations.push({
+                priority: 9,
+                type: 'info',
+                title: '📝 Page in Draft Mode',
+                description: 'Publish page when ready for search engine indexing',
+                action: () => {
+                    alert('Publish this page in Webflow when content is finalized');
+                }
+            });
+        }
+        else if (issue.message.includes('Open Graph tags')) {
+            recommendations.push({
+                priority: 9,
+                type: 'info',
+                title: '📱 Add Social Sharing Tags',
+                description: 'Open Graph tags improve how your page appears when shared on social media',
+                action: () => {
+                    alert('Add Open Graph settings in Webflow page settings for better social previews');
+                }
+            });
+        }
+        else if (issue.message.includes('Article schema')) {
+            recommendations.push({
+                priority: 9,
+                type: 'info',
+                title: '📄 Add Article Schema',
+                description: 'Help search engines understand your content structure',
+                action: () => {
+                    alert('Consider adding Article structured data via custom code embed');
+                }
+            });
+        }
+        else if (issue.message.includes('FAQ schema')) {
+            recommendations.push({
+                priority: 9,
+                type: 'info',
+                title: '❓ Add FAQ Schema',
+                description: 'Q&A content can appear as rich snippets in search results',
+                action: () => {
+                    alert('Add FAQ structured data to enhance search appearance');
+                }
+            });
+        }
+    });
+    // Priority 10: Other improvements
     issues.filter(i => i.type === 'warning' || i.type === 'info').forEach(issue => {
         if (issue.message.includes('readability') && !issue.message.includes('sentence') && !issue.message.includes('paragraph')) {
             recommendations.push({
-                priority: 9,
+                priority: 10,
                 type: 'info',
                 title: '📖 Improve Readability',
                 description: issue.message,
@@ -1334,7 +1530,7 @@ function displayRecommendations(issues, headings) {
     `;
         return;
     }
-    recommendationsList.innerHTML = recommendations.slice(0, 8).map(rec => `
+    recommendationsList.innerHTML = recommendations.slice(0, 10).map(rec => `
     <div class="recommendation-item ${rec.type}" ${rec.action ? `onclick="(${rec.action.toString()})()"` : ''}>
       <div class="rec-header">
         <span class="rec-title">${rec.title}</span>
