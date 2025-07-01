@@ -616,11 +616,7 @@ async function analyzeLinkStructure(element: any): Promise<SEOIssue[]> {
   const issues: SEOIssue[] = [];
   const links = await collectAllLinks(element);
   
-  // Debug: Log what we found
-  console.log('Total links found:', links.length);
-  if (links.length > 0) {
-    console.log('Sample link:', links[0]);
-  }
+  // Check if any links were found
   
   // If no links found at all, return early with a message
   if (links.length === 0) {
@@ -733,7 +729,6 @@ async function collectAllLinks(element: any): Promise<Array<{href: string, text:
           }
           
           if (href) {
-            console.log('Found link:', href, 'Text:', linkText.trim());
             links.push({
               href: href,
               text: linkText.trim(),
@@ -1343,11 +1338,11 @@ function displayRecommendations(issues: SEOIssue[], headings: HeadingInfo[]) {
     }
   }
   
-  // Priority 6: Link optimization
+  // Priority 4.5: Link optimization (moved up from 6)
   issues.forEach(issue => {
     if (issue.message.includes('No internal links')) {
       recommendations.push({
-        priority: 6,
+        priority: 4.5,
         type: 'warning',
         title: '🔗 Add Internal Links',
         description: 'Link to other relevant pages on your site to improve navigation and SEO',
@@ -1357,7 +1352,7 @@ function displayRecommendations(issues: SEOIssue[], headings: HeadingInfo[]) {
       });
     } else if (issue.message.includes('internal link') && issue.message.includes('consider adding more')) {
       recommendations.push({
-        priority: 6,
+        priority: 4.5,
         type: 'info',
         title: '➕ Add More Internal Links',
         description: issue.message,
@@ -1369,7 +1364,7 @@ function displayRecommendations(issues: SEOIssue[], headings: HeadingInfo[]) {
     
     if (issue.message.includes('No external links')) {
       recommendations.push({
-        priority: 6,
+        priority: 4.5,
         type: 'info',
         title: '🌐 Link to Sources',
         description: 'Add 1-2 links to authoritative external sources to build trust',
@@ -1633,7 +1628,7 @@ function displayRecommendations(issues: SEOIssue[], headings: HeadingInfo[]) {
     return;
   }
   
-  recommendationsList.innerHTML = recommendations.slice(0, 10).map(rec => `
+  recommendationsList.innerHTML = recommendations.slice(0, 12).map(rec => `
     <div class="recommendation-item ${rec.type}" ${rec.action ? `onclick="(${rec.action.toString()})()"` : ''}>
       <div class="rec-header">
         <span class="rec-title">${rec.title}</span>
