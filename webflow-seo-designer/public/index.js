@@ -562,25 +562,34 @@ function analyzeLinkStructure(element) {
     return __awaiter(this, void 0, void 0, function* () {
         const issues = [];
         const links = yield collectAllLinks(element);
-        // Count internal vs external links
-        const currentDomain = window.location.hostname;
+        // Debug: Log what we found
+        console.log('Total links found:', links.length);
+        if (links.length > 0) {
+            console.log('Sample link:', links[0]);
+        }
+        // If no links found at all, return early with a message
+        if (links.length === 0) {
+            issues.push({
+                type: 'info',
+                message: 'No links detected on page - add internal and external links for better SEO'
+            });
+            return issues;
+        }
+        // In Webflow Designer, we need to check links differently
+        // Internal links typically start with / or # or are relative
         const internalLinks = links.filter(link => {
-            try {
-                const url = new URL(link.href, window.location.origin);
-                return url.hostname === currentDomain || link.href.startsWith('/') || link.href.startsWith('#');
-            }
-            catch (_a) {
-                return false;
-            }
+            const href = link.href.toLowerCase();
+            // Check for relative URLs, hash links, or paths starting with /
+            return href.startsWith('/') ||
+                href.startsWith('#') ||
+                href.startsWith('../') ||
+                href.startsWith('./') ||
+                (!href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('//'));
         });
+        // External links are absolute URLs with http/https
         const externalLinks = links.filter(link => {
-            try {
-                const url = new URL(link.href, window.location.origin);
-                return url.hostname !== currentDomain && !link.href.startsWith('/') && !link.href.startsWith('#');
-            }
-            catch (_a) {
-                return false;
-            }
+            const href = link.href.toLowerCase();
+            return href.startsWith('http://') || href.startsWith('https://') || href.startsWith('//');
         });
         // Internal link recommendations
         if (internalLinks.length === 0) {
@@ -663,6 +672,7 @@ function collectAllLinks(element) {
                                 }
                             }
                             if (href) {
+                                console.log('Found link:', href, 'Text:', linkText.trim());
                                 links.push({
                                     href: href,
                                     text: linkText.trim(),
