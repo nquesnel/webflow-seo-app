@@ -318,7 +318,7 @@ app.get('/disconnect', async (req, res) => {
 });
 
 // API Routes
-const seoRoutes = require('./routes/seo');
+const seoRoutes = require('./dist/routes/seo').default;
 app.use('/api', seoRoutes);
 
 // Serve static files

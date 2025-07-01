@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link href="./styles.css" rel="stylesheet" />
+    <title>SEO Analyzer</title>
+  </head>
+
+  <body>
+    <div id="seo-analyzer">
+      <div class="header">
+        <h2>SEO Analyzer</h2>
+        <button id="refresh-btn" class="icon-btn" title="Refresh">↻</button>
+      </div>
+
+      <div id="page-info" class="section">
+        <div class="loading">Loading page data...</div>
+      </div>
+
+      <div class="score-content-row">
+        <div id="seo-score" class="section score-section">
+          <h3>SEO Score</h3>
+          <div class="score-circle">
+            <span id="score-value">--</span>
+          </div>
+          <div id="score-label" class="score-label">Analyzing...</div>
+        </div>
+
+        <div id="content-analysis" class="section content-section">
+          <h3>Content Analysis</h3>
+          <div class="content-metrics compact">
+            <div class="metric-grid">
+              <div class="metric-item">
+                <span class="metric-label">Words</span>
+                <div class="metric-value-wrap">
+                  <span id="word-count" class="metric-value loading">Counting...</span>
+                  <span class="metric-target" id="word-target" style="display: none;">/ 600</span>
+                </div>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Time</span>
+                <span id="reading-time" class="metric-value loading">--</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Readability</span>
+                <div class="metric-value-wrap">
+                  <span id="readability-score" class="metric-value loading">Reading...</span>
+                  <span class="metric-desc" id="readability-desc" style="display: none;"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="heading-structure" class="section">
+        <h3>Heading Structure</h3>
+        <div id="heading-analysis" class="heading-tree">
+          <div class="loading-small">Analyzing...</div>
+        </div>
+      </div>
+
+      <div id="keyword-section" class="section">
+        <h3>Focus Keyword</h3>
+        <div class="meta-field">
+          <input type="text" id="focus-keyword" placeholder="Enter your target keyword...">
+          <div class="keyword-help">This keyword will be used to analyze your content optimization</div>
+        </div>
+      </div>
+
+      <div id="meta-tags" class="section">
+        <h3>Meta Tags</h3>
+        
+        <div class="meta-field">
+          <label>Title <span id="title-count" class="char-count">(0/60)</span></label>
+          <input type="text" id="page-title" placeholder="Page title...">
+          <div id="title-issues" class="issues"></div>
+        </div>
+
+        <div class="meta-field">
+          <label>Description <span id="desc-count" class="char-count">(0/160)</span></label>
+          <textarea id="page-description" placeholder="Page description..." rows="3"></textarea>
+          <div id="desc-issues" class="issues"></div>
+        </div>
+
+        <button id="update-meta" class="primary-btn" disabled>Update Meta Tags</button>
+      </div>
+
+      <div id="recommendations" class="section">
+        <h3>SEO Recommendations</h3>
+        <div id="recommendations-list" class="recommendations-list">
+          <div class="loading-small">Analyzing...</div>
+        </div>
+      </div>
+    </div>
+
+    <script src="index.js" defer></script>
+  </body>
+</html>
