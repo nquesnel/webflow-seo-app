@@ -318,8 +318,9 @@ app.get('/disconnect', async (req, res) => {
 });
 
 // API Routes
-const seoRoutes = require('./dist/routes/seo').default;
-app.use('/api', seoRoutes);
+// TODO: Uncomment after TypeScript build is configured on Render
+// const seoRoutes = require('./dist/routes/seo').default;
+// app.use('/api', seoRoutes);
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
