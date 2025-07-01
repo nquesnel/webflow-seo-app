@@ -17,6 +17,14 @@
         <div class="loading">Loading page data...</div>
       </div>
 
+      <div id="keyword-section" class="section">
+        <h3>Focus Keyword</h3>
+        <div class="meta-field">
+          <input type="text" id="focus-keyword" placeholder="Enter your target keyword...">
+          <div class="keyword-help">This keyword will be used to analyze your content optimization</div>
+        </div>
+      </div>
+
       <div class="score-content-row">
         <div id="seo-score" class="section score-section">
           <h3>SEO Score</h3>
@@ -28,43 +36,33 @@
 
         <div id="content-analysis" class="section content-section">
           <h3>Content Analysis</h3>
-          <div class="content-metrics compact">
-            <div class="metric-grid">
-              <div class="metric-item">
-                <span class="metric-label">Words</span>
-                <div class="metric-value-wrap">
-                  <span id="word-count" class="metric-value loading">Counting...</span>
-                  <span class="metric-target" id="word-target" style="display: none;">/ 600</span>
-                </div>
+          <div class="content-metrics stacked">
+            <div class="metric-item">
+              <span class="metric-label">Word Count</span>
+              <div class="metric-value-wrap">
+                <span id="word-count" class="metric-value loading">Counting...</span>
+                <span class="metric-target" id="word-target" style="display: none;">/ 600</span>
               </div>
-              <div class="metric-item">
-                <span class="metric-label">Time</span>
-                <span id="reading-time" class="metric-value loading">--</span>
-              </div>
-              <div class="metric-item">
-                <span class="metric-label">Readability</span>
-                <div class="metric-value-wrap">
-                  <span id="readability-score" class="metric-value loading">Reading...</span>
-                  <span class="metric-desc" id="readability-desc" style="display: none;"></span>
-                </div>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Read Time</span>
+              <span id="reading-time" class="metric-value loading">--</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Readability</span>
+              <div class="metric-value-wrap">
+                <span id="readability-score" class="metric-value loading">Reading...</span>
+                <span class="metric-desc" id="readability-desc" style="display: none;"></span>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div id="heading-structure" class="section">
-        <h3>Heading Structure</h3>
-        <div id="heading-analysis" class="heading-tree">
-          <div class="loading-small">Analyzing...</div>
-        </div>
-      </div>
-
-      <div id="keyword-section" class="section">
-        <h3>Focus Keyword</h3>
-        <div class="meta-field">
-          <input type="text" id="focus-keyword" placeholder="Enter your target keyword...">
-          <div class="keyword-help">This keyword will be used to analyze your content optimization</div>
+        <div id="heading-structure" class="section heading-section">
+          <h3>Heading Structure</h3>
+          <div id="heading-analysis" class="heading-tree scrollable">
+            <div class="loading-small">Analyzing...</div>
+          </div>
         </div>
       </div>
 

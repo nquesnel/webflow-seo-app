@@ -412,14 +412,79 @@ textarea {
 }
 
 .content-section {
-  flex: 1;
+  flex: 0 0 220px;
   background: white;
   border-radius: 8px;
   padding: 16px !important;
   border: 1px solid #e9ecef;
 }
 
-/* Content Analysis - Compact */
+.heading-section {
+  flex: 1;
+  background: white;
+  border-radius: 8px;
+  padding: 16px !important;
+  border: 1px solid #e9ecef;
+  min-width: 0; /* Allow flex item to shrink */
+}
+
+/* Content Analysis - Stacked */
+.content-metrics.stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.content-metrics.stacked .metric-item {
+  background: #f8f9fa;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.content-metrics.stacked .metric-label {
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.content-metrics.stacked .metric-value-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.content-metrics.stacked .metric-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.content-metrics.stacked .metric-value.loading {
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: normal;
+}
+
+.content-metrics.stacked .metric-target {
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: normal;
+}
+
+.content-metrics.stacked .metric-desc {
+  font-size: 11px;
+  color: #6c757d;
+  margin-left: 4px;
+}
+
+/* Content Analysis - Compact (old grid layout) */
 .content-metrics.compact {
   margin-top: 8px;
 }
@@ -532,17 +597,20 @@ textarea {
 }
 
 .metric-value-wrap.good .metric-value,
-.metric-value.good {
+.metric-value.good,
+.content-metrics.stacked .metric-value-wrap.good .metric-value {
   color: #28a745;
 }
 
 .metric-value-wrap.warning .metric-value,
-.metric-value.warning {
+.metric-value.warning,
+.content-metrics.stacked .metric-value-wrap.warning .metric-value {
   color: #ffc107;
 }
 
 .metric-value-wrap.poor .metric-value,
-.metric-value.poor {
+.metric-value.poor,
+.content-metrics.stacked .metric-value-wrap.poor .metric-value {
   color: #dc3545;
 }
 
@@ -564,7 +632,10 @@ textarea {
   border-radius: 6px;
   border: 1px solid #e9ecef;
   font-size: 12px;
-  max-height: 200px;
+}
+
+.heading-tree.scrollable {
+  max-height: 120px;
   overflow-y: auto;
 }
 
